@@ -7,11 +7,11 @@
 
 | | |
 |---|---|
-| Status | Working demo (v0.9). All external services run as mocks with documented success and failure modes. |
+| Status | Working demo (v0.9). All external services run as mocks with documented success and failure modes. No live AI key is connected yet; without one the system works by code only. |
 | Runtime | Node.js 20+, TypeScript executed by `tsx`. One dev dependency, no framework, no database server. |
 | Tests | 500 automated checks (`npm test`), all passing. |
 | Languages | Interface and data are in Russian. Code comments are in Russian; this README and `SECURITY.md` are in English. |
-| License | Proprietary, all rights reserved (placeholder, see `LICENSE`). |
+| License | Source is public for viewing and review; all rights reserved, no permission to reuse is granted (see `LICENSE`). |
 
 ## Contents
 
@@ -124,7 +124,7 @@ Nothing is sent to a database server or a vendor. The only data that can leave t
 
 | Service | In this repository | In production (design) |
 |---|---|---|
-| **Anthropic Claude API** | Live when `ANTHROPIC_API_KEY` is set (`src/model.ts`, 8 s timeout, falls back to deterministic code). Without a key everything runs by code, no model. | Primary text model. Key lives only in a secret manager; per-request audit without bodies. |
+| **Anthropic Claude API** | Integration code is ready (`src/model.ts`, 8 s timeout, falls back to deterministic code). **No API key is connected yet**, so today everything runs by code without a model; setting `ANTHROPIC_API_KEY` switches the model on. | Primary text model. Key lives only in a secret manager; per-request audit without bodies. |
 | **Bitrix24** | Mock with three outcomes: success, `503`, lost-reply (`src/bitrix.ts`). Directory of users, task create/close, idempotent by key. | Inbound webhook or OAuth app with scopes `task` and `user` only. Same interface, `BITRIX_MODE=live`. |
 | **Gmail** | A letter is a document in the corpus; replying produces a draft that waits in the confirmation queue. | OAuth with `gmail.readonly` and `gmail.compose` (drafts). Sending only from the queue after a click. No access to other mailboxes. |
 | **Telegram** | `src/messenger.ts` writes the intent to the journal. | Bot API. Webhook with `secret_token` verification, allow-list of chat ids, bot sees only messages addressed to it (privacy mode), no group reading, no documents sent. |
@@ -139,7 +139,7 @@ The model gateway (`src/model.ts`) is the single place where a model is called.
 
 | Step | Text | Speech | Status |
 |---|---|---|---|
-| 1 | Claude API (default `MODEL_NAME`) | On-device browser recognition | Implemented (Claude); on-device implemented |
+| 1 | Claude API (default `MODEL_NAME`) | On-device browser recognition | Claude: code ready, key not connected yet. On-device speech: implemented |
 | 2 | YandexGPT / GigaChat (reachable without VPN) | Yandex SpeechKit / SaluteSpeech | **Designed**, not implemented |
 | 3 | Self-hosted open model (Qwen, Llama, Mistral) | Self-hosted Whisper / Vosk | **Designed**, not implemented |
 | 4 | No model: code-only search, extractive summary, comparison, verified protocol drafts | n/a | **Implemented** (this is the default today) |
