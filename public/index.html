@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Помощник руководителя</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/theme.css">
+</head>
+<body>
+  <!-- Каркас из пяти зон, одинаковый на всех страницах -->
+  <div class="app">
+    <!-- Зона 1: бренд, вкладки, кто вошёл -->
+    <header class="zone-1">
+      <a class="brand" href="/" aria-label="ai photoprint, на главную"><span class="logo" aria-hidden="true">P.</span><span class="brand-name">ai photoprint</span></a>
+      <button class="back" id="back" type="button" hidden aria-label="Назад">← Назад</button>
+      <h1 class="page-title" id="page-title"></h1>
+      <nav class="tabs" id="tabs" aria-label="Разделы"></nav>
+      <div class="role" aria-label="Вы вошли как">
+        <span class="avatar" id="avatar" aria-hidden="true"></span>
+        <span class="role-text">
+          <span class="role-name" id="role-name"></span>
+          <span class="role-sub" id="role-sub"></span>
+        </span>
+        <select id="role" hidden tabindex="-1" aria-hidden="true"></select>
+      </div>
+    </header>
+
+    <div class="content" id="content">
+      <!-- Зона 2: основная колонка, своя на каждой странице -->
+      <main class="zone-2" id="main"></main>
+
+      <!-- Зона 5: то, что требует решения (на главной эта сводка внутри самой страницы) -->
+      <section class="zone-5" aria-labelledby="strip-title">
+        <div class="decisions-head">
+          <h2 id="strip-title">Без вас не двинется</h2>
+          <span class="muted">ждут вашего решения</span>
+          <span class="count" id="strip-count"></span>
+        </div>
+        <div class="strip-cards" id="strip"></div>
+      </section>
+    </div>
+
+    <!-- Зоны 3 и 4: помощник и поле ввода -->
+    <aside class="zone-3" aria-label="Помощник">
+      <div class="assistant-head">
+        <img class="mascot" src="/img/mascot.png" alt="" width="48" height="48">
+      </div>
+      <div class="assistant-status" id="assistant-status" hidden><i></i><span>Сейчас ничего не делаю</span></div>
+      <div class="assistant-body" id="assistant-body" aria-live="polite"></div>
+      <div class="assistant-chips" id="assistant-chips" hidden></div>
+      <form class="zone-4" id="ask">
+        <a class="clip" href="/documents" aria-label="Прикрепить документ" title="Документы"></a>
+        <input id="ask-input" type="text" maxlength="500" autocomplete="off"
+               placeholder="чем полезен ?" aria-label="Спросить или поставить задачу">
+        <button class="send" type="submit" aria-label="Отправить"></button>
+      </form>
+    </aside>
+
+    <!-- Полоса «В работе»: что агент делает прямо сейчас -->
+    <section class="work" id="work" aria-label="В работе"></section>
+  </div>
+  <script src="/lib.js"></script>
+  <script src="/shell.js"></script>
+  <script src="/page-home.js"></script>
+  <script src="/page-decisions.js"></script>
+  <script src="/page-trail.js"></script>
+  <script src="/page-route.js"></script>
+  <script src="/page-settings.js"></script>
+  <script src="/page-tasks.js"></script>
+  <script src="/page-documents.js"></script>
+  <script src="/page-meetings.js"></script>
+  <script src="/page-protocol.js"></script>
+  <script src="/page-record.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

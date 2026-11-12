@@ -1,0 +1,45 @@
+{
+  "meetings": [
+    { "id": "m-1110-a", "date": "2026-11-10", "time": "10:00", "durationMin": 25,
+      "title": "Планёрка по переплёту", "participants": ["alina","ivan","dmitry","sergey"],
+      "status": "прошла", "transcript": "2026-11-10-planerka-perepliot", "tailsOpen": 1 },
+
+    { "id": "m-1110-b", "date": "2026-11-10", "time": "14:30", "durationMin": 40,
+      "title": "Приёмка тиража Вектор-Тур", "participants": ["ivan","sergey"],
+      "status": "прошла", "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1111-a", "date": "2026-11-11", "time": "09:30", "durationMin": 20,
+      "title": "Оперативка по производству", "participants": ["ivan","sergey","oleg"],
+      "status": "прошла", "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1111-b", "date": "2026-11-11", "time": "12:00", "durationMin": 30,
+      "title": "Гимназия 14 — согласование макета", "participants": ["dmitry","marina"],
+      "status": "прошла", "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1111-c", "date": "2026-11-11", "time": "15:00", "durationMin": 45,
+      "title": "Планирование сезона", "participants": ["alina","dmitry","ivan","sergey"],
+      "status": "сегодня", "transcript": "2026-11-11-planirovanie-sezona",
+      "briefSources": 6, "tailsOpen": 0 },
+
+    { "id": "m-1112-a", "date": "2026-11-12", "time": "11:00", "durationMin": 60,
+      "title": "Бюджет декабря", "participants": ["alina","dmitry"],
+      "status": "предстоит", "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1113-a", "date": "2026-11-13", "time": "10:00", "durationMin": 30,
+      "title": "Планёрка", "participants": ["alina","ivan","dmitry","sergey","marina","oleg"],
+      "status": "предстоит", "briefReady": true, "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1113-p", "date": "2026-11-13", "time": "16:00", "durationMin": 20,
+      "title": "Созвать по переплёту", "participants": ["alina","ivan","dmitry"],
+      "status": "предложение агента", "proposedBy": "agent",
+      "reason": "три вопроса по переплёту висят неделю", "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1114-a", "date": "2026-11-14", "time": "11:30", "durationMin": 45,
+      "title": "Поставщики", "participants": ["alina","dmitry","ivan"],
+      "status": "предстоит", "materialsMissing": true, "transcript": null, "tailsOpen": 0 },
+
+    { "id": "m-1107-a", "date": "2026-11-07", "time": "11:30", "durationMin": 16,
+      "title": "Встреча с поставщиками", "participants": ["alina","dmitry","ivan"],
+      "status": "прошла", "transcript": "2026-11-07-vstrecha-postavshchiki", "tailsOpen": 0 }
+  ]
+}

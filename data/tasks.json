@@ -1,0 +1,79 @@
+{
+  "watches": [
+    { "id": "w-1", "title": "Госзакупки · фотопечать и фотокниги",
+      "schedule": "каждое утро в 8:00", "filter": "сумма от 50 000",
+      "found": 3, "matching": 1, "createdBy": "alina", "createdAt": "2026-11-05" },
+    { "id": "w-2", "title": "Папка «Договоры 2026» на диске",
+      "schedule": "при появлении файла", "found": 2, "matching": 2,
+      "createdBy": "olga", "createdAt": "2026-10-28" },
+    { "id": "w-3", "title": "Поставщик по переплёту",
+      "schedule": "молчит более 5 дней", "found": 1, "matching": 1,
+      "createdBy": "alina", "createdAt": "2026-11-04" }
+  ],
+  "tasks": [
+    { "id": "t-1", "text": "Расчёт себестоимости переплёта по двум вариантам",
+      "owner": "sergey", "due": "2026-11-13", "status": "просрочена", "overdueDays": 2,
+      "osnovanie": { "type": "протокол", "ref": "2026-11-10-planerka-perepliot#12",
+        "quote": "Сергею — расчёт себестоимости по обоим вариантам" }, "bitrixId": null },
+
+    { "id": "t-2", "text": "Оплатить счёт Бумпром 4471", "owner": "marina", "due": "2026-11-14",
+      "status": "в работе",
+      "osnovanie": { "type": "документ", "ref": "09-schet-bumaga",
+        "quote": "Счёт действителен для оплаты до 14 ноября 2026" }, "bitrixId": 10477 },
+
+    { "id": "t-3", "text": "График смен на декабрь", "owner": "oleg", "due": "2026-11-14",
+      "status": "не начата",
+      "osnovanie": { "type": "протокол", "ref": "2026-11-11-planirovanie-sezona#14",
+        "quote": "с семнадцатого по двадцать первое Жук в отпуске, замены нет" }, "bitrixId": 10479 },
+
+    { "id": "t-4", "text": "Проверка запаса материалов", "owner": null, "due": "2026-11-15",
+      "status": "без исполнителя",
+      "osnovanie": { "type": "наблюдение", "ref": "w-2", "quote": "" }, "bitrixId": null },
+
+    { "id": "t-5", "text": "Допечатка 38 разворотов по рекламации школы 51",
+      "owner": null, "due": "2026-11-20", "status": "без исполнителя",
+      "osnovanie": { "type": "документ", "ref": "17-reklamatsiya-klienta",
+        "quote": "Допечатка 38 разворотов за счёт исполнителя" }, "bitrixId": null },
+
+    { "id": "t-6", "text": "Напомнить Бреставто по финальной редакции", "owner": "dmitry",
+      "due": "2026-11-12", "status": "в работе",
+      "osnovanie": { "type": "протокол", "ref": "2026-11-10-planerka-perepliot#16",
+        "quote": "Напишите им ещё раз" }, "bitrixId": 10480 },
+
+    { "id": "t-7", "text": "Отправить редакцию 3 юристам", "owner": "dmitry", "due": "2026-11-12",
+      "status": "в работе",
+      "osnovanie": { "type": "протокол", "ref": "2026-11-07-vstrecha-postavshchiki#8",
+        "quote": "Без юристов не подписываем" }, "bitrixId": 10468 },
+
+    { "id": "t-8", "text": "Посчитать стоимость временного оператора", "owner": "ivan",
+      "due": "2026-11-17", "status": "не начата",
+      "osnovanie": { "type": "протокол", "ref": "2026-11-11-planirovanie-sezona#19",
+        "quote": "Посчитайте и вернёмся" }, "bitrixId": 10481 },
+
+    { "id": "t-9", "text": "Контрольный оттиск Вектор-Тур", "owner": "sergey", "due": "2026-11-18",
+      "status": "в работе",
+      "osnovanie": { "type": "документ", "ref": "19-tehzadanie-tirazh",
+        "quote": "Контрольный оттиск — 18 ноября 2026" }, "bitrixId": 10455 },
+
+    { "id": "t-10", "text": "Обновить прайс на 6 процентов с 1 декабря", "owner": "dmitry",
+      "due": "2026-11-25", "status": "не начата",
+      "osnovanie": { "type": "протокол", "ref": "2026-11-11-planirovanie-sezona#13",
+        "quote": "Прайс поднимаем на шесть процентов с первого декабря" }, "bitrixId": null },
+
+    { "id": "t-11", "text": "Подготовить пакет документов к встрече с поставщиками",
+      "owner": "olga", "due": "2026-11-13", "status": "в работе",
+      "osnovanie": { "type": "правило", "ref": "r-1", "quote": "пакет за день до встречи" },
+      "bitrixId": 10482 },
+
+    { "id": "t-12", "text": "Заявка на тендер 40 тыс", "owner": null, "due": "2026-11-16",
+      "status": "ждёт решения",
+      "osnovanie": { "type": "наблюдение", "ref": "w-1", "quote": "" }, "bitrixId": null }
+  ],
+  "rules": [
+    { "id": "r-1", "text": "За день до встречи собрать пакет документов",
+      "createdBy": "alina", "createdAt": "2026-10-20", "enabled": true, "mode": "активно" },
+    { "id": "r-2", "text": "На запросы прайса с адресов из списка — отправлять актуальный прайс",
+      "createdBy": "dmitry", "createdAt": "2026-11-09", "enabled": true, "mode": "наблюдение",
+      "observationUntil": "2026-11-16", "wouldHaveSent": 4 }
+  ]
+}

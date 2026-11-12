@@ -1,0 +1,24 @@
+.env
+.env.*
+node_modules/
+data/trail.jsonl
+data/bitrix-mock.json
+.env
+meetings/
+data/meetings-state.json
+data/shares.json
+meetings/
+knowledge/
+data/team.json
+data/settings.json
+
+# Служебное и личное: не публикуем
+.DS_Store
+dist/
+materials/
+_ref/
+*.pptx
+*.mp4
+data/outbox.json
+data/ai-jobs.json
+*.tmp

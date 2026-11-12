@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проверка микрофона и русской речи</title>
+<style>
+  body { font: 16px/1.5 system-ui, sans-serif; max-width: 760px; margin: 32px auto; padding: 0 16px; color: #111; background: #f6f6f7; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  .sub { color: #666; margin: 0 0 20px; }
+  .row { display: flex; gap: 12px; align-items: flex-start; background: #fff; border-radius: 16px; padding: 14px 16px; margin: 10px 0; box-shadow: 0 0 0 1px #e3e3e6; }
+  .dot { flex: 0 0 14px; height: 14px; border-radius: 50%; margin-top: 6px; background: #c9c9c9; }
+  .ok .dot { background: #2f9e5b; } .bad .dot { background: #d64545; } .warn .dot { background: #e0a23b; }
+  .t { font-weight: 600; } .d { color: #555; font-size: 14px; }
+  button { font: inherit; font-weight: 600; padding: 10px 18px; border: 0; border-radius: 999px; background: #111; color: #fff; cursor: pointer; margin: 6px 8px 6px 0; }
+  button:disabled { opacity: .4; cursor: default; }
+  .meter { height: 12px; background: #e3e3e6; border-radius: 6px; overflow: hidden; margin-top: 8px; }
+  .meter i { display: block; height: 100%; width: 0; background: #2f9e5b; transition: width .08s; }
+  #said { min-height: 60px; background: #fff; border-radius: 16px; padding: 14px 16px; box-shadow: 0 0 0 1px #e3e3e6; white-space: pre-wrap; }
+  .verdict { font-size: 18px; font-weight: 700; margin: 20px 0 8px; }
+</style>
+</head>
+<body>
+<h1>Проверка микрофона и русской речи</h1>
+<p class="sub">Откройте этот файл в Google Chrome. Распознавание через Google работает сразу, нужен интернет. Распознавание на компьютере требует скачанного русского языка. Для демо хватит первого.</p>
+
+<div id="checks"></div>
+
+<div class="verdict" id="verdict"></div>
+
+<p>
+  <button id="install" hidden>Скачать русский язык для распознавания</button>
+  <button id="mic">Проверить микрофон</button>
+  <button id="cloud">Проверить распознавание (через Google) и сказать фразу по-русски</button>
+  <button id="speech" disabled>Проверить распознавание на компьютере</button>
+</p>
+<div class="meter"><i id="lvl"></i></div>
+<p class="d" id="hint"></p>
+<div id="said">Здесь появится распознанный текст.</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const state = {};
+function row(id, status, title, detail) {
+  let r = document.getElementById(id);
+  if (!r) { r = document.createElement("div"); r.id = id; $("#checks").append(r); }
+  r.className = "row " + status;
+  r.innerHTML = `<span class="dot"></span><div><div class="t"></div><div class="d"></div></div>`;
+  r.querySelector(".t").textContent = title;
+  r.querySelector(".d").textContent = detail;
+  state[id] = status;
+  verdict();
+}
+function verdict() {
+  const need = ["browser", "api", "secure"];
+  const bad = need.filter((k) => state[k] === "bad");
+  const v = $("#verdict");
+  if (bad.length) { v.textContent = "Для расшифровки русской речи этот браузер не подходит. Откройте файл в Google Chrome."; v.style.color = "#d64545"; }
+  else if ((state.local === "ok" || state.cloud === "ok") && state.mic === "ok") { v.textContent = "Всё готово: запись и расшифровка по-русски будут работать."; v.style.color = "#2f9e5b"; }
+  else if (state.local === "bad" && state.cloud !== "ok") { v.textContent = "Расшифровка на компьютере не работает. Нажмите «Проверить распознавание (через Google)»: она не требует скачивания языка."; v.style.color = "#b87a0f"; }
+  else { v.textContent = ""; }
+}
+
+// 1. Браузер
+const ua = navigator.userAgent;
+const chrome = /Chrome\/(\d+)/.exec(ua);
+const isEdge = /Edg\//.test(ua), isOpera = /OPR\//.test(ua), isYandex = /YaBrowser/.test(ua);
+if (chrome && !isEdge && !isOpera && !isYandex) {
+  const v = Number(chrome[1]);
+  row("browser", v >= 139 ? "ok" : "warn", `Google Chrome ${v}`, v >= 139 ? "Версия подходит." : "Нужна версия 139 или новее: обновите Chrome (меню → Справка → О Google Chrome).");
+} else if (chrome) {
+  row("browser", "warn", "Браузер на основе Chromium, но не Chrome", "Лучше открыть в Google Chrome: в других распознавание русского может не работать.");
+} else {
+  row("browser", "bad", "Это не Chrome", "Safari и Firefox не умеют распознавать речь так, как нужно демо. Откройте файл в Google Chrome.");
+}
+
+// 2. Доступ к микрофону вообще возможен на этой странице
+const hasMic = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+row("secure", hasMic ? "ok" : "bad", hasMic ? "Страница может запрашивать микрофон" : "Страница не может запрашивать микрофон", hasMic ? (location.protocol === "file:" ? "Файл открыт с диска: Chrome спросит разрешение." : "") : "Откройте файл двойным щелчком в Google Chrome, а не внутри другой программы.");
+
+// 3. API распознавания речи
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+if (!SR) row("api", "bad", "В браузере нет распознавания речи", "Нужен Google Chrome.");
+else row("api", "ok", "Распознавание речи в браузере есть", "");
+
+// 4. Локальное распознавание русского (демо принципиально не отправляет речь в сеть)
+async function checkLocal() {
+  if (!SR) return;
+  let rec; try { rec = new SR(); } catch { rec = null; }
+  if (!rec || !("processLocally" in rec)) {
+    row("local", "bad", "Локального распознавания нет", "Эта версия Chrome не умеет расшифровывать речь на самом компьютере. Обновите Chrome до 139 или новее.");
+    return;
+  }
+  if (typeof SR.available !== "function") {
+    row("local", "warn", "Локальное распознавание есть, статус русского языка узнать нельзя", "Нажмите «Проверить распознавание»: это покажет, работает ли оно.");
+    $("#speech").disabled = false; return;
+  }
+  let a;
+  try { a = await SR.available({ langs: ["ru-RU"], processLocally: true }); } catch (e) { a = "error: " + e.message; }
+  if (a === "available") row("local", "ok", "Русский язык для распознавания на компьютере установлен", "Речь не уходит в интернет.");
+  else if (a === "downloadable" || a === "downloading") {
+    row("local", "warn", a === "downloading" ? "Русский язык скачивается" : "Русский язык для распознавания на компьютере не скачан", "Это нужно только для режима «речь не уходит в интернет». Для демо можно не скачивать: используйте распознавание через Google.");
+    $("#install").hidden = false;
+  } else row("local", "warn", "Русский язык на компьютере недоступен", `Ответ Chrome: ${a}. Для демо это не мешает: используйте распознавание через Google.`);
+  $("#speech").disabled = false;
+}
+checkLocal();
+
+$("#install").onclick = async () => {
+  $("#hint").textContent = "Скачиваю язык… Это может занять минуту. Если за 2 минуты ничего не изменится, пропустите: для демо хватит распознавания через Google.";
+  try { const ok = await SR.install({ langs: ["ru-RU"], processLocally: true }); $("#hint").textContent = ok ? "Готово. Обновите страницу." : "Chrome не смог скачать язык."; }
+  catch (e) { $("#hint").textContent = "Не получилось: " + e.message; }
+};
+
+// 5. Микрофон
+$("#mic").onclick = async () => {
+  try {
+    const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const ctx = new AudioContext(), src = ctx.createMediaStreamSource(s), an = ctx.createAnalyser(); an.fftSize = 256; src.connect(an);
+    const buf = new Uint8Array(an.frequencyBinCount); let max = 0; const t0 = Date.now();
+    const tick = () => { an.getByteTimeDomainData(buf); const lvl = Math.max(...buf.map((x) => Math.abs(x - 128))) / 128; max = Math.max(max, lvl); $("#lvl").style.width = Math.min(100, lvl * 160) + "%";
+      if (Date.now() - t0 < 4000) requestAnimationFrame(tick); else { s.getTracks().forEach((t) => t.stop()); ctx.close();
+        row("mic", max > 0.05 ? "ok" : "warn", max > 0.05 ? "Микрофон слышит звук" : "Микрофон включён, но звука нет", max > 0.05 ? "Полоска выше двигалась." : "Скажите что-нибудь во время проверки или выберите другой микрофон в настройках macOS."); } };
+    $("#hint").textContent = "Говорите 4 секунды…"; tick();
+  } catch (e) { row("mic", "bad", "Нет доступа к микрофону", "Разрешите микрофон для этой страницы (значок слева в адресной строке) и повторите. " + e.name); }
+};
+
+// 6. Живая проверка распознавания. local=true: только на компьютере, local=false: через сервис Google (нужен интернет)
+function live(local) {
+  const label = local ? "на компьютере" : "через Google";
+  const r = new SR(); r.lang = "ru-RU"; r.interimResults = true; r.continuous = false;
+  if (local) { try { r.processLocally = true; } catch {} }
+  let got = false, started = false;
+  const say = (t) => { $("#hint").textContent = t; };
+  r.onstart = () => { started = true; say(`Слушаю (${label}). Скажите по-русски: «Тест, один, два, три»`); $("#said").textContent = "Говорите…"; };
+  r.onresult = (e) => { got = true; $("#said").textContent = [...e.results].map((x) => x[0].transcript).join(" "); };
+  r.onerror = (e) => {
+    const why = { "not-allowed": "Chrome не дал доступ к микрофону. Нажмите на значок слева в адресной строке и разрешите микрофон.", "service-not-allowed": "Chrome запретил распознавание на этой странице.", "language-not-supported": "Русский язык для распознавания на компьютере не установлен.", "network": "Нет связи с сервисом распознавания: проверьте интернет.", "no-speech": "Речи не услышано: говорите громче и ближе к микрофону.", "audio-capture": "Микрофон не найден или занят другой программой." }[e.error] || "Ошибка: " + e.error;
+    say(`Не получилось (${label}): ${why}`);
+    if (e.error === "language-not-supported") $("#install").hidden = false;
+    row(local ? "local" : "cloud", "bad", `Распознавание ${label} не работает`, why);
+  };
+  r.onend = () => {
+    if (got) row(local ? "local" : "cloud", "ok", `Русская речь распознаётся ${label}`, local ? "Речь не уходит в интернет." : "Расшифровка в демо будет работать (звук речи уходит в сервис Google).");
+    else if (!started) say("Распознавание не запустилось. Нажмите кнопку ещё раз и разрешите микрофон, когда Chrome спросит.");
+    else if (!$("#hint").textContent.startsWith("Не получилось")) say("Ничего не распозналось. Скажите фразу громче и повторите.");
+  };
+  $("#said").textContent = "Запускаю…"; say("Если Chrome спросит про микрофон, нажмите «Разрешить».");
+  try { r.start(); } catch (e) { say("Не запустилось: " + e.message); }
+  // на случай, если Chrome молчит и не отвечает
+  setTimeout(() => { if (!started && !got) say("Chrome не ответил за 8 секунд. Проверьте, не заблокирован ли микрофон (значок слева в адресной строке) и есть ли интернет."); }, 8000);
+}
+$("#cloud").onclick = () => live(false);
+$("#speech").onclick = () => live(true);
+</script>
+</body>
+</html>

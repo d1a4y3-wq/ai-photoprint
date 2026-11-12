@@ -1,0 +1,29 @@
+{
+  "name": "ai-photoprint",
+  "version": "0.9.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "tsx tests/evals.ts && tsx tests/demo-evals.ts",
+    "test:node22": "node --experimental-strip-types tests/evals.ts && node --experimental-strip-types tests/demo-evals.ts",
+    "start": "tsx src/server.ts",
+    "reset": "rm -rf data/trail.jsonl data/bitrix-mock.json data/meetings-state.json data/shares.json data/outbox.json data/ai-jobs.json data/team.json data/settings.json knowledge meetings",
+    "build:html": "node scripts/build-standalone.mjs"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  },
+  "description": "Secure AI assistant for executives: records meetings, writes protocols, creates Bitrix24 tasks, works with documents. Reads and prepares; a human decides.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "ai-assistant",
+    "bitrix24",
+    "prompt-injection",
+    "rbac",
+    "privacy",
+    "meetings"
+  ]
+}

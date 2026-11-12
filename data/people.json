@@ -1,0 +1,11 @@
+{
+  "people": [
+    { "id": "sergey",  "name": "Сергей Л.",      "role": "manager",       "bitrixId": 42, "telegram": "@sergey_l" },
+    { "id": "marina",  "name": "Марина С.",      "role": "manager",       "bitrixId": 51, "telegram": null },
+    { "id": "oleg",    "name": "Олег Б.",        "role": "manager",       "bitrixId": 47, "telegram": null },
+    { "id": "ivan",    "name": "Иван Петров",    "role": "deputy_tech",   "bitrixId": 12, "telegram": "@ivan_p" },
+    { "id": "dmitry",  "name": "Дмитрий В.",     "role": "deputy_growth", "bitrixId": 15, "telegram": null },
+    { "id": "olga",    "name": "Ольга М.",       "role": "assistant",     "bitrixId": 23, "telegram": "@olga_m" },
+    { "id": "alina",   "name": "Сергей К.",       "role": "director",      "bitrixId": 1,  "telegram": "@sergey_k" }
+  ]
+}

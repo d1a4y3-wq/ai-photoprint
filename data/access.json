@@ -1,0 +1,192 @@
+{
+  "documents": {
+    "01-dogovor-kolbus": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager"
+      ]
+    },
+    "02-reglament-priyomki": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager"
+      ]
+    },
+    "03-protokol-10-noya": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "assistant"
+      ]
+    },
+    "04-pismo-postavshika": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager"
+      ]
+    },
+    "05-zarplaty": {
+      "scope": "finance",
+      "allow": []
+    },
+    "06-dogovor-perepliot-v1": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech"
+      ]
+    },
+    "07-dogovor-perepliot-v2": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech"
+      ]
+    },
+    "08-dogovor-perepliot-itog": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech"
+      ]
+    },
+    "09-schet-bumaga": {
+      "scope": "finance",
+      "allow": [
+        "deputy_growth"
+      ]
+    },
+    "10-prays-fotoknigi": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech",
+        "manager",
+        "assistant"
+      ]
+    },
+    "11-dogovor-klient-gimnaziya": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "manager"
+      ]
+    },
+    "12-anketa-podryadchika": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech"
+      ]
+    },
+    "13-grafik-smen": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager",
+        "assistant"
+      ]
+    },
+    "14-protokol-28-okt": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "assistant"
+      ]
+    },
+    "15-reglament-fotopechati": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager",
+        "assistant"
+      ]
+    },
+    "16-dogovor-arendy": {
+      "scope": "finance",
+      "allow": [
+        "deputy_growth"
+      ]
+    },
+    "17-reklamatsiya-klienta": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager"
+      ]
+    },
+    "18-kp-konkurenta": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth"
+      ]
+    },
+    "19-tehzadanie-tirazh": {
+      "scope": "production",
+      "allow": [
+        "deputy_tech",
+        "manager"
+      ]
+    },
+    "20-sluzhebnaya-zapiska": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech"
+      ]
+    },
+    "21-polozhenie-tayna": {
+      "scope": "commerce",
+      "allow": [
+        "deputy_growth",
+        "deputy_tech",
+        "manager",
+        "assistant"
+      ]
+    }
+  },
+  "actors": {
+    "alina": {
+      "name": "Сергей К.",
+      "role": "director",
+      "scopes": [
+        "production",
+        "commerce",
+        "finance"
+      ]
+    },
+    "ivan": {
+      "name": "Иван Петров",
+      "role": "deputy_tech",
+      "scopes": [
+        "production",
+        "commerce"
+      ]
+    },
+    "sergey": {
+      "name": "Сергей Л.",
+      "role": "manager",
+      "scopes": [
+        "production"
+      ]
+    },
+    "dmitry": {
+      "name": "Дмитрий В.",
+      "role": "deputy_growth",
+      "scopes": [
+        "commerce",
+        "finance"
+      ]
+    },
+    "olga": {
+      "name": "Ольга М.",
+      "role": "assistant",
+      "scopes": [
+        "production",
+        "commerce"
+      ]
+    }
+  }
+}
