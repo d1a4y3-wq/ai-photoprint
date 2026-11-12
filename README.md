@@ -1,228 +1,220 @@
-# ai photoprint: a secure AI assistant for executives
+# ai photoprint
 
-> **The agent reads and prepares. A human decides.**
-> It records a meeting, turns speech into text, writes a protocol with owners and deadlines, creates the tasks in Bitrix24, and prepares documents for the next meeting. Nothing leaves the system without an explicit confirmation from a person who is allowed to give it.
+A secure AI assistant for company executives. It records a meeting, converts speech to text, builds a protocol with decisions, owners and deadlines, places the resulting tasks in Bitrix24, and works with the company's documents (package assembly, search, summary, comparison of editions). The agent only reads and prepares; every outgoing action (letter, invitation, task, publication) is confirmed by a person with the right to do so.
 
 *Русская версия: [README.ru.md](README.ru.md)*
 
+## 1. Project status
+
 | | |
 |---|---|
-| Status | Working demo (v0.9). All external services run as mocks with documented success and failure modes. No live AI key is connected yet; without one the system works by code only. |
-| Runtime | Node.js 20+, TypeScript executed by `tsx`. One dev dependency, no framework, no database server. |
-| Tests | 500 automated checks (`npm test`), all passing. |
-| Languages | Interface and data are in Russian. Code comments are in Russian; this README and `SECURITY.md` are in English. |
-| License | Source is public for viewing and review; all rights reserved, no permission to reuse is granted (see `LICENSE`). |
+| Version | 0.9, working demo |
+| Mode | **Demo mode without an external AI API.** The administration of the event stated that connecting an API is not required at this stage, so the demo runs without a language model: protocol drafts, summaries, comparisons and search are produced by deterministic code and prepared fixtures. |
+| Enabling the model | One setting: `ANTHROPIC_API_KEY` in `.env`. No code changes. On the next request the gateway (`src/model.ts`) calls the Anthropic Messages API; on timeout (8 s) or error it falls back to the code path for that request. The live call path is implemented but has not been run against a real key yet. |
+| External services | Bitrix24, Gmail, Telegram and Calendar are mocks with the real interface and with success, `503` and lost-reply outcomes. |
+| Tests | 500 checks, `npm test`, all passing. |
+| Authentication | Not implemented (demo identity). See section 12. |
+| License | Source is published for viewing and review. All rights reserved; no permission to reuse is granted (`LICENSE`). |
 
-## Contents
+## 2. What the system does
 
-1. [What it does](#what-it-does)
-2. [Architecture](#architecture)
-3. [Security model](#security-model)
-4. [Roles and access matrix](#roles-and-access-matrix)
-5. [Data flow and storage](#data-flow-and-storage)
-6. [Integrations: demo vs. production](#integrations-demo-vs-production)
-7. [AI providers and automatic fallback](#ai-providers-and-automatic-fallback)
-8. [Quick start](#quick-start)
-9. [Configuration](#configuration)
-10. [Testing](#testing)
-11. [Single-file demo and presentation tooling](#single-file-demo)
-12. [Repository layout](#repository-layout)
-13. [Known limitations](#known-limitations)
-14. [Path to production](#path-to-production)
-15. [Team](#team)
-
-## What it does
-
-| Area | Capability |
+| Module | Function |
 |---|---|
-| **Meetings** | Calendar, invitations (people and external guests), agent-proposed meetings that become real only after confirmation, cancelling meetings (organiser or leadership; meetings with a recorded protocol cannot be deleted). |
-| **Recording and protocol** | Recording starts only on a button press with a visible indicator. Speech-to-text runs in the browser (on-device by default). A protocol is built: topics, decisions with owners, ideas, risks, **open questions without a decision**. Every item carries a quotation and segment numbers **verified by code**, not by the model. |
-| **Tasks to Bitrix24** | Tasks come only from decisions with a named owner and a deadline. By default the agent sends them to a leader for confirmation; auto-placement is an opt-in setting. Idempotent: a retry never creates a duplicate. |
-| **Documents** | Five jobs with an answer window and follow-up chat: assemble a document package for a meeting, search local files, summarise a document, compare editions, find a passage with highlighted context. Everything works only over documents the user may see. |
-| **Decisions queue** | Everything the agent prepared and has not sent: invitations, replies to letters, task batches. Each shows exactly what will be sent and to whom. |
-| **Control** | Urgent tasks first, a live data-route map built from the audit log, a read-only audit trail, connection and permission settings, sign-in and sign-out. |
-| **Knowledge base** | A closed task can become a how-to entry, published by leadership for all employees. |
+| Meetings | Calendar, invitations for employees and external guests, meetings proposed by the agent (created only after confirmation), cancellation (organiser or leadership; a meeting with a recorded protocol cannot be removed). |
+| Recording | Starts only by a button press, with a visible indicator. Audio is stored in `meetings/<id>/`. Recognition runs in the browser. |
+| Protocol | Topics, decisions with owners and deadlines, ideas, risks, open questions without a decision. Each item holds a quotation and transcript segment numbers; the code verifies them against the transcript. |
+| Tasks | Created only from decisions that have a named owner and a deadline. Sent to leadership for confirmation by default; automatic placement is an optional setting. Idempotent. |
+| Documents | Five jobs with a result window and a follow-up chat: assemble a package for a meeting, search local files, summarise a document, compare editions, find a passage with context. All run over documents the user is allowed to see. |
+| Decisions queue | Everything prepared by the agent and not yet sent: invitations, letter replies, task batches. Each item shows what exactly will be sent and to whom. |
+| Control | Urgent tasks, data-route map built from the journal, read-only audit trail, connection and permission settings. |
+| Knowledge base | A closed task can be turned into an instruction and published by leadership. |
 
-## Architecture
+## 3. Technology stack
+
+| Layer | Technology | Why |
+|---|---|---|
+| Runtime | Node.js 20+ | Built-in `fetch`; one runtime for server, tests and build. |
+| Language | TypeScript (strict), executed by `tsx` | Types for actor, document, task and protocol structures; no separate build step. The server has no runtime dependencies. |
+| HTTP | `node:http` | No framework: the whole request path (limits, headers, actor, routing) is visible in one file, `src/server.ts`. Smaller attack surface. |
+| Storage | JSON and JSON Lines files, `node:fs` | No database server for a single-node demo. Atomic writes (temp file + rename), mode `0600`, directories `0700` (`src/atomic.ts`). |
+| Audit | Append-only JSONL journal | Every read, refusal, confirmation and send is recorded; secrets are masked at the last step (`src/journal.ts`). |
+| Identifiers | `node:crypto` | Idempotency keys and ids. |
+| Retrieval (RAG) | Lexical whole-word scoring over paragraph chunks; the permission filter is applied **before** scoring | Explainable and permission-safe; no embedding service that could see closed documents. |
+| Model | Anthropic Messages API (`fetch`, `anthropic-version: 2023-06-01`), default `claude-sonnet-4-5`, `max_tokens` 1024, 8 s timeout | Primary text model once a key is set. Falls back to code on any error. |
+| Offline path | Extractive summary, text comparison, protocol drafts in `data/protocol-drafts`, answers in `fixtures/responses.json` | The system is fully usable without any API. |
+| Speech recognition | Browser Web Speech API (`ru-RU`, `continuous`, `interimResults`), `processLocally` where the browser supports it | Speech stays on the device by default; cloud recognition only with an explicit checkbox. |
+| Audio capture | `MediaRecorder` (`audio/webm;codecs=opus`, falling back to `ogg`, `mp4`) | The recording is stored with the meeting and can be played from a transcript segment. |
+| Frontend | Plain HTML, JS modules and one CSS design layer (`public/theme.css`), Manrope font (Cyrillic, self-hosted) | No build step, no CDN, no third-party scripts, strict CSP. All data is written into the DOM as text, never as HTML. |
+| Single-file build | `esbuild` (used only by `npm run build:html`) | Bundles the UI, the data and the server code into one HTML file; Node modules are replaced by shims in `scripts/shims`, files by an in-memory file system. |
+| Tests | Plain TypeScript scripts, isolated temp state | No test framework; two suites with 500 checks. |
+| Integrations (design) | Bitrix24 REST (webhook or OAuth, scopes `task`, `user`), Gmail API (`gmail.readonly`, `gmail.compose`), Telegram Bot API (webhook `secret_token`), Google Calendar API | Minimum scopes; all outgoing calls go through the confirmation queue. |
+
+Project dependencies: one dev dependency, `tsx`. A test fails if the list grows. `esbuild` is used only for the optional single-file build.
+
+## 4. Architecture
 
 ```mermaid
 flowchart LR
-  U[Browser UI] -->|JSON over HTTP, localhost only| S[HTTP server<br/>src/server.ts]
-  S --> A[Actor + role check<br/>roles.ts, access.ts]
-  A --> R[Retrieval over visible docs only<br/>docs.ts, doc-jobs.ts]
+  U[Browser UI] -->|JSON over HTTP, 127.0.0.1| S[HTTP server<br/>src/server.ts]
+  S --> A[Actor and role check<br/>roles.ts, access.ts]
+  A --> R[Retrieval over visible documents<br/>docs.ts, doc-jobs.ts]
   R --> D[DLP masking<br/>dlp.ts]
-  D --> I[Injection scan + data fence<br/>injection.ts]
+  D --> I[Injection scan and data fence<br/>injection.ts]
   I --> M[Model gateway<br/>model.ts]
   M --> V[Verification by code<br/>protocol.ts]
   V --> Q[Confirmation queue<br/>outbox.ts, tasks.ts]
-  Q -->|only after a human click| X[(Bitrix24 / mail / Telegram)]
-  S --> J[(Append-only audit journal)]
+  Q -->|after a human confirmation| X[(Bitrix24, mail, Telegram)]
+  S --> J[(Append-only journal)]
   Q --> J
 ```
 
-* **No framework.** A small HTTP server from the standard library serves the UI and a JSON API.
-* **State is plain files** (`data/`), written atomically with owner-only permissions. See [Data flow and storage](#data-flow-and-storage).
-* **The browser UI** is plain HTML, JS and one CSS file. There is no `innerHTML` with data; all text is set as text.
-* Deeper details: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+Every domain function receives the `Actor` (`id`, `role`, `scopes`) as its first argument; no read path bypasses it. Module map and request lifecycle: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
 
-## Security model
+## 5. Why the demo works without an API
 
-Design rule: **remove one of the three parts of the dangerous triad**: access to private data, reading untrusted text, and the ability to send data out. Reading is read-only; sending is always a human click.
+The administration of the event said an API connection is not mandatory now. For that reason:
 
-| Threat | Control | Where |
+1. All model-dependent features have a code implementation: word-overlap search with highlighted context, extractive summaries, comparison of document editions, protocol drafts built from transcripts, citation verification.
+2. `src/model.ts` is a switch. With an empty `ANTHROPIC_API_KEY` it answers from the code path and fixtures and marks the answer source as `fixture`. With a key it sends a request to the Anthropic API and marks the source as `live`.
+3. To connect the model: put `ANTHROPIC_API_KEY=...` into `.env` and restart. The security chain in front of the model (permission filter, DLP, injection fence) is already in place and is not changed by the switch.
+4. The live request path is written but has not been exercised against a real key in this repository. Until that is done, treat "live" as implemented and untested.
+
+## 6. Security model
+
+Design rule: remove at least one part of the dangerous triad: access to private data, reading untrusted text, ability to send data out. Reading is read-only, sending is a human action.
+
+| Threat | Control | Code |
 |---|---|---|
-| Reading something you may not see | Permission filter runs **before** retrieval. Forbidden material never enters the model context. A closed document is indistinguishable from a non-existent one (404, no title, no id). A final `assertNoLeak` check throws if a chunk slips through. | `access.ts`, `docs.ts` |
-| Prompt injection in documents, letters, transcripts, uploads | Untrusted text is data, never instructions: (1) scanned on load, upload and import with 25+ patterns (RU/EN: reset instructions, role spoofing, exfiltration through links, shell one-liners, secret requests), after Unicode normalisation (NFKC, zero-width and bidi characters removed); (2) a document with a finding is flagged as `tainted` as a whole; (3) text is wrapped in explicit fences and the system prompt forbids obeying anything inside; (4) the finding is shown to a human and **not executed**. | `injection.ts`, `load.ts` |
-| Secrets leaking into prompts, logs, or files | DLP masks API keys, tokens, JWTs, private keys, `.env` lines, passwords and Luhn-valid card numbers in queries, in model context, and **in the journal at the last step**. Files named `.env`, `id_rsa`, `*.pem`, `*.key` and files containing secrets are refused. | `dlp.ts`, `journal.ts`, `docs.ts` |
-| Model output trusted blindly | Quotations and segment numbers of a protocol are re-checked against the transcript by code. Tasks never get invented owners or dates. UI renders everything as text. | `protocol.ts`, `public/` |
-| Agent acting on its own | Letters, invitations, Bitrix tasks, knowledge publication: queued and sent only after confirmation by leadership. Assistants and managers cannot confirm. Repeated clicks do not duplicate (idempotency keys). | `outbox.ts`, `tasks.ts`, `once.ts` |
-| Data exfiltration over the network | The only outbound host in the code is the model API (asserted by a test). The server listens on `127.0.0.1`. | `model.ts`, `server.ts` |
-| Browser-side attacks | CSP (`default-src 'self'`, no inline scripts), `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, restrictive `Permissions-Policy`, COOP/CORP, `nosniff`. Path traversal blocked (allow-listed extensions, resolved path must stay in `public/`, ids match `^[\w-]+$`). Body size limits. Per-IP rate limit on `/api/`. | `server.ts` |
-| Tampering and loss | Append-only audit journal; secrets masked; state files written atomically (temp file + rename) with mode `0600`, directories `0700`. | `journal.ts`, `atomic.ts` |
-| Supply chain | One dev dependency (`tsx`), lockfile committed, no MCP servers or third-party skills. A test fails if dependencies grow or an unknown host appears in code. | `package.json`, `tests/` |
+| Access to data outside the user's rights | Permission filter **before** retrieval; forbidden material never reaches the model context; a closed document is indistinguishable from a missing one (404); `assertNoLeak` throws if a chunk slips through. | `access.ts`, `docs.ts` |
+| Prompt injection (documents, letters, transcripts, uploads) | Outside text is data: scanned with 27 pattern groups (RU/EN) after NFKC normalisation and removal of zero-width and bidi characters; a finding marks the whole document `tainted`; text is wrapped in explicit fences; the system prompt forbids following instructions inside; findings are shown to a person, not executed. | `injection.ts` |
+| Secret leakage | DLP masks API keys, tokens, JWTs, private keys, `.env` lines, passwords and Luhn-valid card numbers in queries, in model context and in the journal. Files `.env`, `id_rsa`, `*.pem`, `*.key` are refused. | `dlp.ts`, `journal.ts` |
+| Trusting model output | Quotations and segment numbers are re-checked against the transcript; tasks never get invented owners or dates; the UI renders text only. | `protocol.ts` |
+| Autonomous actions | Letters, invitations, tasks and publications go to the queue; only leadership confirms; idempotency keys prevent duplicates. | `outbox.ts`, `tasks.ts`, `once.ts` |
+| Network exfiltration | The only outbound host in the code is the model API (asserted by a test). The server listens on `127.0.0.1`. | `model.ts`, `server.ts` |
+| Browser attacks | CSP (`default-src 'self'`), `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `Permissions-Policy`, COOP/CORP, `nosniff`; path traversal blocked; body size limits; per-IP rate limit. | `server.ts` |
+| Tampering and loss | Append-only journal; atomic writes; file modes `0600` and `0700`. | `journal.ts`, `atomic.ts` |
+| Supply chain | One dev dependency, committed lockfile, no MCP servers or third-party agent skills; a test fails on new dependencies or unknown hosts. | `package.json`, `tests/` |
 
-Full policy, reporting channel and production hardening checklist: [`SECURITY.md`](SECURITY.md).
+Policy, reporting channel and production hardening: [`SECURITY.md`](SECURITY.md).
 
-## Roles and access matrix
+## 7. Roles
 
-Five roles, defined in `src/types.ts`; leadership logic lives in `src/roles.ts`.
+Five roles (`src/types.ts`, `src/roles.ts`).
 
-| Role | Sees documents | Confirms sends, tasks, publication | Changes settings | Sees audit journal | Cancels meetings |
+| Role | Documents | Confirms sends, tasks, publication | Settings | Journal | Cancels meetings |
 |---|---|---|---|---|---|
-| `director` | All | Yes | Yes | **All users** | Any future meeting |
-| `deputy_tech` / `deputy_growth` | Role + scope (e.g. production, commerce) | Yes | Yes | Own entries | Own meetings |
-| `assistant` | Role + scope | **No**: prepares and proposes | No | Own entries | Own meetings |
-| `manager` | Own scope only | **No** | No | Own entries | Own meetings |
+| `director` | All | Yes | Yes | All users | Any future meeting |
+| `deputy_tech`, `deputy_growth` | Role and scope | Yes | Yes | Own entries | Own meetings |
+| `assistant` | Role and scope | No (prepares and proposes) | No | Own entries | Own meetings |
+| `manager` | Own scope | No | No | Own entries | Own meetings |
 
-* A document is visible only if the role is in its `allow` list **and** the user's scopes contain the document's `scope` (the director bypasses the scope check).
-* Meeting content (recording, protocol, package) is visible to participants who accepted the invitation. An invited but not yet accepted person sees only the invitation.
-* Shared documents become visible to the recipient only after the recipient accepts, and can be revoked by the sender.
-* Today the identity is selected by the sign-in screen or `?as=<id>` (demo only): **there is no password**. See [Known limitations](#known-limitations).
+A document is visible when the role is in its `allow` list and the user's scopes contain the document's `scope` (the director skips the scope check). Meeting content is visible to participants who accepted the invitation. A shared document becomes visible after the recipient accepts and can be revoked by the sender.
 
-## Data flow and storage
+## 8. Data flow and storage
 
 ```
-audio (browser) ──► text (browser, on-device by default; Google cloud only with an explicit checkbox)
-text/documents ──► actor filter ──► retrieval ──► DLP mask ──► injection fence ──► model API (only masked, visible fragments)
-model answer ──► code verification ──► confirmation queue ──► (human click) ──► Bitrix24 / mail / Telegram
-every step ──► append-only journal (secrets masked)
+audio (browser) -> text (browser, on-device by default)
+text, documents -> actor filter -> retrieval -> DLP mask -> injection fence -> model API (masked, visible fragments only)
+model answer    -> code verification -> confirmation queue -> (human) -> Bitrix24 / mail / Telegram
+every step      -> append-only journal (secrets masked)
 ```
 
-| Data | Where it lives | Notes |
+| Data | Location |
+|---|---|
+| Corporate documents, rights | `data/documents/*.md`, `data/access.json` |
+| Uploads and local-folder files | Memory, per user |
+| Recordings, transcripts, protocols | `meetings/<id>/` |
+| Tasks, shares, team, outbox, jobs, settings | `data/*.json` |
+| Knowledge base | `knowledge/` |
+| Audit journal | `data/trail.jsonl` |
+| Secrets | `.env` (git-ignored) |
+
+The only data that can leave the machine is masked, permission-filtered text sent to the model API (after a key is set) and, if the user ticks the box, speech audio sent by Chrome to its cloud recognition.
+
+## 9. Integrations: demo and production
+
+| Service | Demo (this repository) | Production design |
 |---|---|---|
-| Corporate documents | `data/documents/*.md`, rights in `data/access.json` | Read-only for the app. |
-| Users' uploads and local-folder files | Memory, per user | Never visible to another user; scanned for secrets and injections. |
-| Recordings and transcripts | `meetings/<id>/` (audio, `transcript.json`, `protocol.json`) | Only participants can read; audio retention policy is a production item. |
-| Tasks, shares, team, outbox, jobs, settings | `data/*.json` | Atomic writes, `0600`. |
-| Knowledge base | `knowledge/*.json|md` | Published by leadership, readable by all employees. |
-| Audit journal | `data/trail.jsonl` | Append-only; secrets masked. |
-| Secrets | `.env` (git-ignored) | Only the model API key. Never in the UI, journal or prompts. |
+| Anthropic Claude API | Code ready (`src/model.ts`), key not set, fallback to code | Key in a secret manager, per-request audit without bodies |
+| Bitrix24 | Mock: success, `503`, lost reply; user directory, create and close task, idempotent by key (`src/bitrix.ts`) | Inbound webhook or OAuth app, scopes `task` and `user`; same interface |
+| Gmail | A letter is a document; a reply is a draft in the confirmation queue | OAuth `gmail.readonly` and `gmail.compose`; send only from the queue after confirmation |
+| Telegram | `src/messenger.ts` records the intent in the journal | Bot API, webhook with `secret_token`, chat allow-list, privacy mode, no document sending |
+| Google Calendar | Static `data/calendar.json` | Read through the API; create events only after confirmation |
+| Speech to text | Browser Web Speech API | Self-hosted Whisper or Yandex SpeechKit / SaluteSpeech behind the same interface |
 
-Nothing is sent to a database server or a vendor. The only data that can leave the machine is the **masked, permission-filtered text** sent to the model API (and, if the user ticks the cloud-recognition box, the speech audio sent by Chrome to Google).
-
-## Integrations: demo vs. production
-
-| Service | In this repository | In production (design) |
-|---|---|---|
-| **Anthropic Claude API** | Integration code is ready (`src/model.ts`, 8 s timeout, falls back to deterministic code). **No API key is connected yet**, so today everything runs by code without a model; setting `ANTHROPIC_API_KEY` switches the model on. | Primary text model. Key lives only in a secret manager; per-request audit without bodies. |
-| **Bitrix24** | Mock with three outcomes: success, `503`, lost-reply (`src/bitrix.ts`). Directory of users, task create/close, idempotent by key. | Inbound webhook or OAuth app with scopes `task` and `user` only. Same interface, `BITRIX_MODE=live`. |
-| **Gmail** | A letter is a document in the corpus; replying produces a draft that waits in the confirmation queue. | OAuth with `gmail.readonly` and `gmail.compose` (drafts). Sending only from the queue after a click. No access to other mailboxes. |
-| **Telegram** | `src/messenger.ts` writes the intent to the journal. | Bot API. Webhook with `secret_token` verification, allow-list of chat ids, bot sees only messages addressed to it (privacy mode), no group reading, no documents sent. |
-| **Google Calendar** | Static calendar file. | Read via API; creating meetings only after confirmation. |
-| **Speech-to-text** | Browser Web Speech API. On-device by default; Google cloud only by an explicit checkbox on the recording screen. | Self-hosted Whisper, or Yandex SpeechKit / SaluteSpeech, behind the same interface. |
-
-Secure-connection rules for mail and messengers (enforced by design, listed in `SECURITY.md`): least-privilege scopes, tokens only in a secret manager, TLS only, webhook signature checks, allow-listed senders and chats, message bodies never written to logs, DLP before anything is sent, every outgoing message previewed and confirmed by a person.
-
-## AI providers and automatic fallback
-
-The model gateway (`src/model.ts`) is the single place where a model is called.
+## 10. AI providers and fallback chain
 
 | Step | Text | Speech | Status |
 |---|---|---|---|
-| 1 | Claude API (default `MODEL_NAME`) | On-device browser recognition | Claude: code ready, key not connected yet. On-device speech: implemented |
-| 2 | YandexGPT / GigaChat (reachable without VPN) | Yandex SpeechKit / SaluteSpeech | **Designed**, not implemented |
-| 3 | Self-hosted open model (Qwen, Llama, Mistral) | Self-hosted Whisper / Vosk | **Designed**, not implemented |
-| 4 | No model: code-only search, extractive summary, comparison, verified protocol drafts | n/a | **Implemented** (this is the default today) |
+| 1 | Claude API | Browser, on-device | Claude: code ready, key not set. Browser speech: implemented |
+| 2 | YandexGPT or GigaChat | Yandex SpeechKit, SaluteSpeech | Designed, not implemented |
+| 3 | Self-hosted open model (Qwen, Llama, Mistral) | Self-hosted Whisper, Vosk | Designed, not implemented |
+| 4 | No model: code-only search, extractive summary, comparison, protocol drafts | n/a | Implemented, default today |
 
-Today the gateway already degrades from 1 to 4 on timeout or error without user action. Adding steps 2 and 3 means implementing one `complete(prompt)` function per provider and an ordered list in configuration.
+Falling from step 1 to step 4 on timeout or error is implemented. Steps 2 and 3 need one `complete(prompt)` function per provider and an ordered provider list in configuration.
 
-## Quick start
+## 11. Run, configure, test
 
 ```bash
-git clone <repository-url> ai-photoprint && cd ai-photoprint
+git clone https://github.com/d1a4y3-wq/ai-photoprint && cd ai-photoprint
 npm install
-npm test            # 500 checks, no network, no API key needed
-npm start           # http://localhost:3000  (binds to 127.0.0.1)
+npm test            # 500 checks, no network, no API key
+npm start           # http://localhost:3000, binds to 127.0.0.1
+npm run reset       # reset demo state
+npm run build:html  # single-file demo: dist/photoprint-demo.html
 ```
 
-Optional: `cp .env.example .env` and set `ANTHROPIC_API_KEY` to use a live model. Reset demo state: `npm run reset`.
-
-To demo permissions, open the app as another user: `http://localhost:3000/?as=sergey` (manager), `?as=ivan`, `?as=dmitry`, `?as=olga`.
-
-## Configuration
-
-See [`.env.example`](.env.example). Main variables:
+Open as another user: `http://localhost:3000/?as=sergey` (also `ivan`, `dmitry`, `olga`).
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `ANTHROPIC_API_KEY` | empty | Enables the live model. Never commit it. |
-| `MODEL_NAME` | `claude-sonnet-4-5` | Model identifier sent to the API. |
-| `BITRIX_MODE` | `mock` | Only `mock` is implemented in this repository. |
-| `PORT` | `3000` | Listen port (always on `127.0.0.1`). |
-| `RATE_LIMIT_PER_MIN` | `600` | Per-IP API limit; `0` disables. |
-| `DEMO_TODAY` | `2026-11-11` | "Today" for the demo data. |
-| `*_FILE`, `*_DIR` | under `data/` | Paths of state files, used by tests to isolate state. |
+| `ANTHROPIC_API_KEY` | empty | Enables the live model |
+| `MODEL_NAME` | `claude-sonnet-4-5` | Model identifier |
+| `BITRIX_MODE` | `mock` | Only `mock` is implemented |
+| `PORT` | `3000` | Port (always on `127.0.0.1`) |
+| `RATE_LIMIT_PER_MIN` | `600` | Per-IP API limit, `0` disables |
+| `DEMO_TODAY` | `2026-11-11` | "Today" for the demo data |
 
-## Testing
+Tests: `tests/evals.ts` (205 checks: permission filter, leak guard, injection fence, model switch, API) and `tests/demo-evals.ts` (295 checks: protocols, tasks and idempotency, Bitrix outcomes, meetings, shares, document jobs, DLP, roles, security headers, network and dependency allow-lists, confirmation queue, single-file build). Strict type checking with `tsc` passes (TypeScript is not a project dependency).
 
-`npm test` runs two suites (no framework, plain scripts, isolated temp state):
+The single-file demo (`dist/photoprint-demo.html`) opens in Chrome without Node or network: the server code runs inside the page over an in-memory file system, state persists in `localStorage`, `#/reset` clears it. Microphone and Russian speech check page: [`tools/mic-check.html`](tools/mic-check.html).
 
-* `tests/evals.ts`: 205 checks of the core: permission filter, leak guard, injection fencing, model switch, API shape.
-* `tests/demo-evals.ts`: 295 checks of the product: protocols, tasks and idempotency, Bitrix outcomes, meetings, shares, document jobs, DLP, roles, security headers, network and dependency allow-lists, confirmation queue, standalone build.
+## 12. Known limitations
 
-The code type-checks cleanly under `tsc --strict` (verified in a scratch environment; TypeScript is deliberately **not** added to the project dependencies, a test keeps the dependency list closed).
+1. **No authentication.** The user is chosen on the client (sign-in list or `?as=`). Acceptable only because the demo server listens on `127.0.0.1`. Production needs SSO (OIDC) and server sessions.
+2. **Integrations are mocks.** Interfaces and failure modes are real, network calls are not.
+3. **No live model run.** The Claude call path is implemented but not tested against a real key.
+4. **Lexical retrieval.** Fast and permission-safe, lower recall on paraphrases than embeddings.
+5. **File storage.** Single node, no cross-file transactions, no encryption at rest in the application.
+6. **Pattern-based injection detection** is incomplete by nature; the design relies on structural controls (filter before retrieval, data fence, no autonomous sends, confirmation).
+7. **In-memory rate limit**, per process.
+8. **Provider chain** beyond "model or code" is designed only.
 
-## Single-file demo
+## 13. Path to production
 
-`npm run build:html` bundles the UI, fonts, data and the **server code itself** into `dist/photoprint-demo.html`. Open it in Chrome with no Node and no network: the API calls are served inside the page from an in-memory file system (state survives reloads via `localStorage`; reset with `#/reset`). Use it for presentations. A separate microphone and Russian speech check page is in [`tools/mic-check.html`](tools/mic-check.html).
-
-## Repository layout
-
-```
-src/            server and domain logic (access, roles, injection, dlp, protocol, tasks, outbox, ...)
-public/         plain HTML/JS/CSS UI, fonts, mascot
-data/           demo documents, people, calendar, transcripts, access rules
-fixtures/       canned model answers for offline mode
-tests/          the two suites
-scripts/        single-file build and Node shims for it
-tools/          standalone diagnostics (microphone check)
-docs/           architecture; docs/ru/ holds the Russian product spec, design system and screens
-```
-
-## Known limitations
-
-Stated plainly, because a security story without them is not credible.
-
-1. **No authentication.** The acting user is chosen by the client (`?as=` or the sign-in list). Anyone who can reach the server can act as anyone. This is acceptable only because the server binds to `127.0.0.1` in the demo. Production needs SSO/OIDC and server-issued sessions (see below).
-2. **Integrations are mocks.** Bitrix24, Gmail, Telegram and Calendar are simulated. Interfaces and failure modes are real; the network calls are not.
-3. **Retrieval is lexical**, not semantic. It is fast, explainable and permission-safe; recall on paraphrases is lower than with embeddings.
-4. **File state.** Single node, no transactions across files, no encryption at rest in the app itself.
-5. **Injection detection is pattern-based**; patterns reduce risk but cannot be complete. The structural defences (permission filter, data fence, no autonomous sends, human confirmation) are what the design relies on.
-6. **Rate limiting is in memory** and per process.
-7. **Provider fallback chain** beyond "model or code-only" is designed but not implemented.
-
-## Path to production
-
-- [ ] SSO (OIDC), server sessions, roles mapped from the identity provider; remove the client-chosen actor.
-- [ ] Move state to PostgreSQL with row-level security; audit journal as an insert-only table with hash chaining.
-- [ ] Encrypt at rest; secrets in a manager (not `.env`); TLS termination and mTLS between services.
-- [ ] Live Bitrix24, Gmail and Telegram connectors with the scopes and checks listed above.
-- [ ] Provider chain (steps 2 and 3) with health checks and journal of which provider answered.
-- [ ] Retention: delete raw audio after protocol approval; configurable per tenant.
-- [ ] Optional semantic retrieval **with ACL filter inside the index query**, never after it.
+- [ ] SSO (OIDC), server sessions, roles from the identity provider.
+- [ ] PostgreSQL with row-level security; insert-only audit table with hash chain.
+- [ ] Encryption at rest, secret manager, TLS, mTLS between services.
+- [ ] Live Bitrix24, Gmail, Telegram connectors with the scopes above.
+- [ ] Provider chain (steps 2 and 3) with health checks and a journal of which provider answered.
+- [ ] Retention: delete raw audio after protocol approval.
+- [ ] Semantic retrieval with the ACL filter inside the index query.
 - [ ] CI: tests, type check, dependency audit, secret scanning, SBOM.
-- [ ] Incident runbook (key rotation, journal review, takedown of a poisoned document).
+- [ ] Incident runbook: key rotation, journal review, removal of a poisoned document.
 
-## Team
+## 14. Repository layout
 
-Built at a hackathon (Great Stone and Fotoprint) by **Karina Kartonka** (3 years of design studies) and **Dasha Ananyevskaya** (1.5 years of design and development, including collaborations with an institute and large construction companies).
+```
+src/        server and domain logic
+public/     HTML, JS, CSS, fonts
+data/       demo documents, people, calendar, transcripts, access rules
+fixtures/   prepared model answers for offline mode
+tests/      two test suites
+scripts/    single-file build and Node shims
+tools/      microphone check
+docs/       architecture; docs/ru/ has the Russian specification, design system and screens
+```
+
+## 15. Team
+
+Built at a hackathon (Great Stone and Fotoprint) by **Karina Kartonka** and **Dasha Ananyevskaya**.
